@@ -5,13 +5,17 @@ import com.example.Book.My.Show.Dtos.RequestDtos.TheaterSeatEntryDto;
 import com.example.Book.My.Show.Enums.SeatType;
 import com.example.Book.My.Show.Exceptions.TheaterIsNotPresentOnThisAddress;
 import com.example.Book.My.Show.Exceptions.TheaterIsPresentOnThatAddress;
+import com.example.Book.My.Show.Models.Show;
 import com.example.Book.My.Show.Models.Theater;
 import com.example.Book.My.Show.Models.TheaterSeat;
+import com.example.Book.My.Show.Repositories.ShowRepository;
 import com.example.Book.My.Show.Repositories.TheaterRepository;
 import com.example.Book.My.Show.Transformers.TheaterTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -19,6 +23,9 @@ public class TheaterService {
 
     @Autowired
     private TheaterRepository theaterRepository;
+
+    @Autowired
+    private ShowRepository showRepository;
     public String addTheater(TheaterEntryDto theaterEntryDto) throws TheaterIsPresentOnThatAddress {
         if(theaterRepository.findByAddress(theaterEntryDto.getAddress()) != null) {
             throw new TheaterIsPresentOnThatAddress();
@@ -85,5 +92,16 @@ public class TheaterService {
         theaterRepository.save(theater);
 
         return "Theater Seats have been added successfully";
+    }
+
+    public List<Theater> theatersHavingShowOnGivenTime(LocalTime time) {
+        List<Show> showList=showRepository.findAll();
+        List<Theater>theaters=new ArrayList<>();
+        for (Show show:showList){
+            if(show.getTime().equals(time)){
+                theaters.add(show.getTheater());
+            }
+        }
+        return theaters;
     }
 }

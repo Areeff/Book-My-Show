@@ -1,15 +1,11 @@
 package com.example.Book.My.Show.Services;
 
 
+import com.example.Book.My.Show.Dtos.RequestDtos.TicketDeleteDto;
 import com.example.Book.My.Show.Dtos.RequestDtos.TicketEntryDto;
 import com.example.Book.My.Show.Dtos.ResponseDtos.TicketResponseDto;
-import com.example.Book.My.Show.Exceptions.RequestedSeatAreNotAvailable;
-import com.example.Book.My.Show.Exceptions.ShowDoesNotExists;
-import com.example.Book.My.Show.Exceptions.UserDoesNotExists;
-import com.example.Book.My.Show.Models.Show;
-import com.example.Book.My.Show.Models.ShowSeat;
-import com.example.Book.My.Show.Models.Ticket;
-import com.example.Book.My.Show.Models.User;
+import com.example.Book.My.Show.Exceptions.*;
+import com.example.Book.My.Show.Models.*;
 import com.example.Book.My.Show.Repositories.*;
 import com.example.Book.My.Show.Transformers.TicketTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +13,8 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,13 +41,13 @@ public class TicketService {
     private JavaMailSender mailSender;
 
     public TicketResponseDto ticketBooking(TicketEntryDto ticketEntryDto) throws RequestedSeatAreNotAvailable, UserDoesNotExists, ShowDoesNotExists{
-        // check user present
+        // check show present
         Optional<Show> showOpt = showRepository.findById(ticketEntryDto.getShowId());
         if(showOpt.isEmpty()) {
             throw new ShowDoesNotExists();
         }
 
-        //check show present
+        //check user present
         Optional<User> userOpt = userRepository.findById(ticketEntryDto.getUserId());
         if(userOpt.isEmpty()) {
             throw new UserDoesNotExists();
@@ -143,5 +141,43 @@ public class TicketService {
             sb.append(s).append(",");
         }
         return sb.toString();
+    }
+
+    public List<Ticket> getAllBookedTicketsByUser(Integer userId) throws UserDoesNotExists {
+        Optional<User> userOptional=userRepository.findById(userId);
+        if(userOptional.isEmpty()){
+            throw new UserDoesNotExists();
+        }
+        User user=userOptional.get();
+        return new ArrayList<>(user.getTicketList());
+
+    }
+
+    public Integer getTotalCollectionForMovie(Integer movieId) throws MovieDoesNotExists{
+        Optional<Movie> movieOptional=movieRepository.findById(movieId);
+        if(movieOptional.isEmpty()){
+            throw new MovieDoesNotExists();
+        }
+        Movie movie=movieOptional.get();
+        List<Ticket>ticketList=ticketRepository.findAll();
+        Integer totalCollection=0;
+        for (Ticket ticket:ticketList){
+            if(ticket.getShow().getMovie().getMovieName().equals(movie.getMovieName())){
+                totalCollection+=ticket.getTotalTicketsPrice();
+            }
+        }
+        return totalCollection;
+    }
+
+    public String rateMovie(Integer movieId) throws MovieDoesNotExists{
+        Optional<Movie>movieOptional=movieRepository.findById(movieId);
+        if (movieOptional.isEmpty()){
+            throw new MovieDoesNotExists();
+        }
+        Movie movie=movieOptional.get();
+        if(getTotalCollectionForMovie(movieId)>100000) {
+            return "Hit";
+        }
+        return "Flop";
     }
 }
